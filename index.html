@@ -19,11 +19,24 @@
 
     /* Utilities */
     .hidden { display: none !important; }
-    .btn { background: linear-gradient(135deg, #0088cc, #00d2ff); color: #fff; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-weight: bold; transition: 0.2s; }
-    .btn:hover { opacity: 0.9; transform: scale(1.02); }
+    .btn { background: linear-gradient(135deg, #0088cc, #00d2ff); color: #fff; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-weight: bold; transition: 0.2s; display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+    .btn:hover:not(:disabled) { opacity: 0.9; transform: scale(1.02); }
+    .btn:disabled { background: #334e68 !important; color: #88a4c8 !important; cursor: not-allowed; transform: scale(0.98) !important; opacity: 0.7; box-shadow: inset 0 2px 4px rgba(0,0,0,0.4); }
     .btn-danger { background: linear-gradient(135deg, #c0392b, #e74c3c); }
     .btn-gold { background: linear-gradient(135deg, #f39c12, #f1c40f); color: #000; }
     .card { background: var(--bg-card); border: 1px solid #103d75; border-radius: 8px; padding: 15px; margin-bottom: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
+
+    /* Spinner Loading */
+    .spinner {
+      display: inline-block;
+      width: 14px;
+      height: 14px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-radius: 50%;
+      border-top-color: #fff;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
 
     /* Top Notice */
     #notice-box { position: fixed; top: 15px; left: 50%; transform: translateX(-50%); z-index: 9999; background: rgba(0,210,255,0.9); color: #000; padding: 10px 25px; border-radius: 20px; font-weight: bold; box-shadow: 0 0 15px var(--accent); display: none; }
@@ -51,9 +64,6 @@
     .boss-enraged { filter: drop-shadow(0 0 10px var(--danger)); animation: vibrate 0.1s infinite; }
 
     .cannon-base { position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); width: 80px; height: 80px; text-align: center; }
-    .bullet-net { position: absolute; border: 2px dashed var(--accent); border-radius: 50%; background: rgba(0,210,255,0.2); animation: expandNet 0.4s forwards; }
-
-    @keyframes expandNet { 0% { width: 10px; height: 10px; opacity: 1; } 100% { width: 120px; height: 120px; opacity: 0; } }
     @keyframes vibrate { 0% { transform: translateY(0); } 50% { transform: translateY(-2px); } 100% { transform: translateY(2px); } }
 
     .damage-text { position: absolute; color: var(--accent-gold); font-weight: bold; font-size: 18px; animation: floatUp 0.8s forwards; pointer-events: none; }
@@ -87,8 +97,8 @@
     <input type="text" id="auth-user" class="auth-input" placeholder="Tên tài khoản">
     <input type="password" id="auth-pass" class="auth-input" placeholder="Mật khẩu">
     <div style="margin-top: 15px; display: flex; gap: 10px;">
-      <button class="btn" style="flex:1" onclick="doAuth('login')">Đăng nhập</button>
-      <button class="btn btn-gold" style="flex:1" onclick="doAuth('register')">Đăng ký</button>
+      <button class="btn" style="flex:1" onclick="doAuth('login', this)">Đăng nhập</button>
+      <button class="btn btn-gold" style="flex:1" onclick="doAuth('register', this)">Đăng ký</button>
     </div>
   </div>
 
@@ -100,7 +110,7 @@
         <span class="coin-badge">Xu: <span id="disp-coins">0</span></span>
         <span id="disp-event" class="hidden" style="background: var(--danger); color: #fff; padding: 2px 8px; border-radius: 10px; font-size: 12px;">X2 SỰ KIỆN</span>
       </div>
-      <div style="display: flex; gap: 8px;">
+      <div style="display: flex; gap: 8px; flex-wrap: wrap;">
         <button class="btn" onclick="openModal('modal-rooms')">Phòng</button>
         <button class="btn" onclick="openModal('modal-guns')">Kho Súng</button>
         <button class="btn" onclick="openModal('modal-baucua')">Bầu Cua</button>
@@ -127,7 +137,7 @@
           </div>
         </div>
 
-        <div class="card" style="margin-top: 15px; display: flex; justify-content: space-between; align-items: center;">
+        <div class="card" style="margin-top: 15px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
           <div>
             <span>Đạn: </span>
             <select id="bullet-select" onchange="changeBullet(this.value)" class="auth-input" style="width: auto; display: inline-block;">
@@ -156,10 +166,10 @@
           <h3>Chuyển xu / Nhập Mã</h3>
           <input type="text" id="gift-target" class="auth-input" placeholder="Tên người nhận">
           <input type="number" id="gift-amount" class="auth-input" placeholder="Số xu tặng">
-          <button class="btn" style="width:100%; margin-bottom: 10px;" onclick="sendGift()">Tặng Xu (Phí 5%)</button>
+          <button class="btn" style="width:100%; margin-bottom: 10px;" onclick="sendGift(this)">Tặng Xu (Phí 5%)</button>
           <hr style="border-color: #103d75; margin: 10px 0;">
           <input type="text" id="code-input" class="auth-input" placeholder="Nhập mã Quà Tặng">
-          <button class="btn btn-gold" style="width:100%;" onclick="redeemCode()">Nhận Quà</button>
+          <button class="btn btn-gold" style="width:100%;" onclick="redeemCode(this)">Nhận Quà</button>
         </div>
         <div class="card">
           <h3>Top Đại Gia</h3>
@@ -194,7 +204,7 @@
       <h3>Bầu Cua Online (Đồng bộ phòng)</h3>
       <p style="font-size: 12px; color: #8ab4f8;">Thời gian còn lại: <strong id="bc-timer" style="color:var(--accent-gold);">30</strong>s</p>
       <div style="display: flex; gap: 10px; margin: 10px 0;" id="bc-dice-result">
-        <span>Kết quả trước: - - -</span>
+        <span>Kết quả trước: - - -</span>
       </div>
       <div class="grid-selectable" id="bc-grid"></div>
     </div>
@@ -212,7 +222,7 @@
           <option value="1000000">1,000,000 Xu</option>
         </select>
       </div>
-      <button class="btn btn-gold" style="font-size: 18px; padding: 10px 30px;" onclick="spinWheel()">QUAY NGAY</button>
+      <button class="btn btn-gold" style="font-size: 18px; padding: 10px 30px;" onclick="spinWheel(this)">QUAY NGAY</button>
       <div id="wheel-result" style="margin-top: 15px; font-weight: bold; color: var(--accent);"></div>
     </div>
   </div>
@@ -232,20 +242,20 @@
       <span class="close-btn" onclick="closeModal('modal-admin')">&times;</span>
       <h3>Bảng Quản Trị Admin</h3>
       <div class="tab-bar">
-        <div class="tab-item active" onclick="switchAdminTab('users')">Người chơi</div>
-        <div class="tab-item" onclick="switchAdminTab('stats')">Thống kê</div>
-        <div class="tab-item" onclick="switchAdminTab('event')">Sự kiện</div>
-        <div class="tab-item" onclick="switchAdminTab('config')">Cấu hình</div>
-        <div class="tab-item" onclick="switchAdminTab('log')">Nhật ký</div>
+        <div class="tab-item active" onclick="switchAdminTab('users', this)">Người chơi</div>
+        <div class="tab-item" onclick="switchAdminTab('stats', this)">Thống kê</div>
+        <div class="tab-item" onclick="switchAdminTab('event', this)">Sự kiện</div>
+        <div class="tab-item" onclick="switchAdminTab('config', this)">Cấu hình</div>
+        <div class="tab-item" onclick="switchAdminTab('log', this)">Nhật ký</div>
       </div>
       <div id="admin-tab-content"></div>
     </div>
   </div>
 
   <script>
-    // CAU HINH TRO CHOI
+    // CẤU HÌNH API MỚI NHẤT
     const CFG = {
-      API: "YOUR_APPS_SCRIPT_WEB_APP_URL_HERE", // Thay URL sau khi deploy Code.gs
+      API: "https://script.google.com/macros/s/AKfycbyH2M7oioRlHAYPV7Op7ws0SJsT6wOtHohlV1yBOtbue8rRNYIhXknjlbwkFGMj_f7HWg/exec",
       syncInterval: 4000
     };
 
@@ -280,7 +290,6 @@
       { id: 10, name: "Súng Thiên Hà", price: 500000000, dps: 22.0 }
     ];
 
-    // STATE TRO CHOI TRONG BỘ NHỚ RAM
     let state = {
       user: null,
       passHash: "",
@@ -299,7 +308,20 @@
     let autoInterval = null;
     let bcPollInterval = null;
 
-    // HAM UTILS & SHA-256
+    // HÀM XỬ LÝ TRẠNG THÁI NÚT BẤM (DẸP XUỐNG & XOAY SPINNER)
+    async function runWithButtonLoading(btn, asyncFn) {
+      if (!btn || btn.disabled) return;
+      const originalHTML = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = `${originalHTML} <span class="spinner"></span>`;
+      try {
+        return await asyncFn();
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = originalHTML;
+      }
+    }
+
     async function sha256(str) {
       const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(str));
       return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
@@ -326,39 +348,43 @@
       }
     }
 
-    // DANG NHAP / DANG KY
-    async function doAuth(type) {
-      const u = document.getElementById("auth-user").value.trim();
-      const p = document.getElementById("auth-pass").value.trim();
-      if (!u || !p) return showNotice("Vui lòng điền đủ thông tin!");
-      
-      const hash = await sha256(u + ":" + p);
-      const res = await apiCall(type, { name: u, passHash: hash });
-
-      if (res.ok) {
-        state.user = u;
-        state.passHash = hash;
-        state.coins = res.coins;
-        state.isAdmin = res.isAdmin || false;
+    // ĐĂNG NHẬP / ĐĂNG KÝ (Có hiệu ứng nút bấm load)
+    async function doAuth(type, btn) {
+      await runWithButtonLoading(btn, async () => {
+        const u = document.getElementById("auth-user").value.trim();
+        const p = document.getElementById("auth-pass").value.trim();
+        if (!u || !p) {
+          showNotice("Vui lòng điền đủ thông tin!");
+          return;
+        }
         
-        document.getElementById("auth-screen").classList.add("hidden");
-        document.getElementById("game-screen").classList.remove("hidden");
-        if (!state.isAdmin) document.getElementById("btn-admin").classList.add("hidden");
+        const hash = await sha256(u + ":" + p);
+        const res = await apiCall(type, { name: u, passHash: hash });
 
-        updateUI();
-        initOcean();
-        startSyncLoop();
-        showNotice("Đăng nhập thành công!");
-      } else {
-        showNotice(res.error || "Thao tác thất bại!");
-      }
+        if (res.ok) {
+          state.user = u;
+          state.passHash = hash;
+          state.coins = res.coins;
+          state.isAdmin = res.isAdmin || false;
+          
+          document.getElementById("auth-screen").classList.add("hidden");
+          document.getElementById("game-screen").classList.remove("hidden");
+          if (!state.isAdmin) document.getElementById("btn-admin").classList.add("hidden");
+
+          updateUI();
+          initOcean();
+          startSyncLoop();
+          showNotice("Đăng nhập thành công!");
+        } else {
+          showNotice(res.error || "Thao tác thất bại!");
+        }
+      });
     }
 
     function logout() {
       location.reload();
     }
 
-    // OCEAN CANNON & BOSS LOGIC
     function initOcean() {
       renderGunSVG();
       spawnBoss();
@@ -366,7 +392,6 @@
 
     function renderGunSVG() {
       const svg = document.getElementById("gun-svg");
-      const g = GUNS[state.gun];
       let extra = "";
       if (state.gun >= 3) extra += `<path d="M5 30 Q 15 10 30 30 Q 45 10 55 30" stroke="#fff" fill="none"/>`;
       if (state.gun >= 4) extra += `<circle cx="30" cy="15" r="5" fill="#ff4d4d"/>`;
@@ -409,10 +434,9 @@
       state.quests.shoot++;
       updateUI();
 
-      // Damage calculation
       const b = BOSSES[state.bossIdx];
       const maxHp = b.hp * ROOMS[state.room].scale * (1 + (state.bossLoop - 1) * 0.6);
-      const maxDmgAllowed = maxHp * 0.05; // Cap at 5% per shot
+      const maxDmgAllowed = maxHp * 0.05;
 
       let baseDmg = state.bullet * GUNS[state.gun].dps;
       let isCrit = Math.random() < 0.08;
@@ -422,12 +446,10 @@
       state.bossHp -= finalDmg;
       state.quests.damage += finalDmg;
 
-      // Show floating text
       showDamageText(e.clientX, e.clientY, Math.floor(finalDmg), isCrit);
       updateBossHpUI();
 
       if (state.bossHp <= 0) {
-        // Boss Defeated
         const reward = Math.floor(maxHp * 0.15);
         state.coins += reward;
         state.quests.boss++;
@@ -492,14 +514,13 @@
       }
     }
 
-    // MODAL OPEN / CLOSE & UI RENDERING
     function openModal(id) {
       document.getElementById(id).classList.remove("hidden");
       if (id === 'modal-rooms') renderRoomGrid();
       if (id === 'modal-guns') renderGunGrid();
       if (id === 'modal-baucua') startBauCuaPoll();
       if (id === 'modal-stock') renderStock();
-      if (id === 'modal-admin') loadAdminData('users');
+      if (id === 'modal-admin') loadAdminData('users', null);
     }
 
     function closeModal(id) {
@@ -546,14 +567,13 @@
       showNotice(`Đã trang bị ${GUNS[idx].name}`);
     }
 
-    // BẦU CUA ONLINE
     function startBauCuaPoll() {
       const items = ["Bầu", "Cua", "Tôm", "Cá", "Gà", "Nai"];
       const grid = document.getElementById("bc-grid");
       grid.innerHTML = items.map(item => `
         <div class="select-card">
           <h4>${item}</h4>
-          <button class="btn btn-gold" style="margin-top:5px; width:100%; font-size:11px;" onclick="betBauCua('${item}')">Cược 1,000</button>
+          <button class="btn btn-gold" style="margin-top:5px; width:100%; font-size:11px;" onclick="betBauCua('${item}', this)">Cược 1,000</button>
         </div>
       `).join('');
 
@@ -566,30 +586,38 @@
       }, 1000);
     }
 
-    async function betBauCua(choice) {
-      if (state.coins < 1000) return showNotice("Không đủ xu cược!");
-      state.coins -= 1000;
-      updateUI();
-      const res = await apiCall("sync", { name: state.user, passHash: state.passHash, op: "bcBet", choice, amount: 1000 });
-      if (res.ok) showNotice(`Đã đặt 1,000 Xu vào ô ${choice}`);
-    }
-
-    // VÒNG QUAY MAY RỦI
-    async function spinWheel() {
-      const bet = parseInt(document.getElementById("wheel-bet").value);
-      if (state.coins < bet) return showNotice("Không đủ xu để quay!");
-      state.coins -= bet;
-      updateUI();
-
-      const res = await apiCall("sync", { name: state.user, passHash: state.passHash, op: "spin", bet });
-      if (res.ok) {
-        state.coins += res.winCoins;
-        document.getElementById("wheel-result").innerText = `Kết quả: ${res.label} -> Nhận +${res.winCoins.toLocaleString()} Xu`;
+    async function betBauCua(choice, btn) {
+      await runWithButtonLoading(btn, async () => {
+        if (state.coins < 1000) {
+          showNotice("Không đủ xu cược!");
+          return;
+        }
+        state.coins -= 1000;
         updateUI();
-      }
+        const res = await apiCall("sync", { name: state.user, passHash: state.passHash, op: "bcBet", choice, amount: 1000 });
+        if (res.ok) showNotice(`Đã đặt 1,000 Xu vào ô ${choice}`);
+      });
     }
 
-    // CHỨNG KHOÁN GIẢ LẬP
+    async function spinWheel(btn) {
+      await runWithButtonLoading(btn, async () => {
+        const bet = parseInt(document.getElementById("wheel-bet").value);
+        if (state.coins < bet) {
+          showNotice("Không đủ xu để quay!");
+          return;
+        }
+        state.coins -= bet;
+        updateUI();
+
+        const res = await apiCall("sync", { name: state.user, passHash: state.passHash, op: "spin", bet });
+        if (res.ok) {
+          state.coins += res.winCoins;
+          document.getElementById("wheel-result").innerText = `Kết quả: ${res.label} -> Nhận +${res.winCoins.toLocaleString()} Xu`;
+          updateUI();
+        }
+      });
+    }
+
     function renderStock() {
       const stocks = [
         { code: "FISH", price: 1200 }, { code: "OCEAN", price: 4500 },
@@ -610,83 +638,103 @@
       `).join('');
     }
 
-    // ADMIN TAB SYSTEM
-    async function loadAdminData(tab) {
-      const content = document.getElementById("admin-tab-content");
-      content.innerHTML = "Đang tải dữ liệu...";
+    async function loadAdminData(tab, btn) {
+      const task = async () => {
+        const content = document.getElementById("admin-tab-content");
+        content.innerHTML = "Đang tải dữ liệu...";
 
-      const res = await apiCall("admin", { name: state.user, passHash: state.passHash, sub: tab });
-      if (!res.ok) return content.innerHTML = "Lỗi tải dữ liệu hoặc không có quyền Admin!";
+        const res = await apiCall("admin", { name: state.user, passHash: state.passHash, sub: tab });
+        if (!res.ok) return content.innerHTML = "Lỗi tải dữ liệu hoặc không có quyền Admin!";
 
-      if (tab === 'users') {
-        content.innerHTML = `
-          <table style="width:100%; border-collapse:collapse; font-size:12px;">
-            <tr style="border-bottom:1px solid #103d75; text-align:left;">
-              <th style="padding:5px;">User</th><th>Xu</th><th>Khóa</th><th>Thao tác</th>
-            </tr>
-            ${res.users.map(u => `
-              <tr style="border-bottom:1px solid #051937;">
-                <td style="padding:5px;">${u.name}</td>
-                <td>${u.coins.toLocaleString()}</td>
-                <td>${u.locked ? 'RỒI' : 'Không'}</td>
-                <td>
-                  <button class="btn" style="font-size:10px;" onclick="adminAdjustCoins('${u.name}')">Sửa xu</button>
-                </td>
+        if (tab === 'users') {
+          content.innerHTML = `
+            <table style="width:100%; border-collapse:collapse; font-size:12px;">
+              <tr style="border-bottom:1px solid #103d75; text-align:left;">
+                <th style="padding:5px;">User</th><th>Xu</th><th>Khóa</th><th>Thao tác</th>
               </tr>
-            `).join('')}
-          </table>
-        `;
-      } else if (tab === 'stats') {
-        content.innerHTML = `<p>Tổng người chơi: <strong>${res.totalUsers}</strong></p><p>Tổng xu server: <strong>${res.totalCoins.toLocaleString()}</strong></p>`;
+              ${res.users.map(u => `
+                <tr style="border-bottom:1px solid #051937;">
+                  <td style="padding:5px;">${u.name}</td>
+                  <td>${u.coins.toLocaleString()}</td>
+                  <td>${u.locked ? 'RỒI' : 'Không'}</td>
+                  <td>
+                    <button class="btn" style="font-size:10px;" onclick="adminAdjustCoins('${u.name}', this)">Sửa xu</button>
+                  </td>
+                </tr>
+              `).join('')}
+            </table>
+          `;
+        } else if (tab === 'stats') {
+          content.innerHTML = `<p>Tổng người chơi: <strong>${res.totalUsers}</strong></p><p>Tổng xu server: <strong>${res.totalCoins.toLocaleString()}</strong></p>`;
+        } else {
+          content.innerHTML = `<p>Tính năng đang cập nhật nhật ký & cấu hình.</p>`;
+        }
+      };
+
+      if (btn) {
+        await runWithButtonLoading(btn, task);
       } else {
-        content.innerHTML = `<p>Tính năng đang cập nhật nhật ký & cấu hình.</p>`;
+        await task();
       }
     }
 
-    function switchAdminTab(tab) {
-      document.querySelectorAll(".tab-item").forEach(el => el.classList.remove("active"));
-      event.target.classList.add("active");
-      loadAdminData(tab);
+    function switchAdminTab(tab, el) {
+      document.querySelectorAll(".tab-item").forEach(item => item.classList.remove("active"));
+      el.classList.add("active");
+      loadAdminData(tab, el);
     }
 
-    async function adminAdjustCoins(targetUser) {
-      const val = prompt("Nhập số xu mới:");
-      if (val === null) return;
-      const res = await apiCall("admin", { name: state.user, passHash: state.passHash, sub: "adjust", target: targetUser, coins: parseInt(val) });
-      if (res.ok) { showNotice("Đã cập nhật!"); loadAdminData('users'); }
+    async function adminAdjustCoins(targetUser, btn) {
+      await runWithButtonLoading(btn, async () => {
+        const val = prompt("Nhập số xu mới:");
+        if (val === null) return;
+        const res = await apiCall("admin", { name: state.user, passHash: state.passHash, sub: "adjust", target: targetUser, coins: parseInt(val) });
+        if (res.ok) { 
+          showNotice("Đã cập nhật!"); 
+          loadAdminData('users', null); 
+        }
+      });
     }
 
-    // TẶNG XU & REDEEM CODE
-    async function sendGift() {
-      const target = document.getElementById("gift-target").value.trim();
-      const amount = parseInt(document.getElementById("gift-amount").value);
-      if (!target || !amount || amount <= 0) return showNotice("Vui lòng điền đúng thông tin!");
-      
-      const res = await apiCall("sync", { name: state.user, passHash: state.passHash, op: "gift", target, amount });
-      if (res.ok) {
-        state.coins -= amount;
-        updateUI();
-        showNotice("Tặng xu thành công!");
-      } else {
-        showNotice(res.error || "Tặng xu thất bại!");
-      }
+    async function sendGift(btn) {
+      await runWithButtonLoading(btn, async () => {
+        const target = document.getElementById("gift-target").value.trim();
+        const amount = parseInt(document.getElementById("gift-amount").value);
+        if (!target || !amount || amount <= 0) {
+          showNotice("Vui lòng điền đúng thông tin!");
+          return;
+        }
+        
+        const res = await apiCall("sync", { name: state.user, passHash: state.passHash, op: "gift", target, amount });
+        if (res.ok) {
+          state.coins -= amount;
+          updateUI();
+          showNotice("Tặng xu thành công!");
+        } else {
+          showNotice(res.error || "Tặng xu thất bại!");
+        }
+      });
     }
 
-    async function redeemCode() {
-      const code = document.getElementById("code-input").value.trim();
-      if (!code) return showNotice("Vui lòng nhập mã!");
-      
-      const res = await apiCall("sync", { name: state.user, passHash: state.passHash, op: "redeem", code });
-      if (res.ok) {
-        state.coins += res.reward;
-        updateUI();
-        showNotice(`Nhận thành công +${res.reward.toLocaleString()} Xu`);
-      } else {
-        showNotice(res.error || "Mã không hợp lệ!");
-      }
+    async function redeemCode(btn) {
+      await runWithButtonLoading(btn, async () => {
+        const code = document.getElementById("code-input").value.trim();
+        if (!code) {
+          showNotice("Vui lòng nhập mã!");
+          return;
+        }
+        
+        const res = await apiCall("sync", { name: state.user, passHash: state.passHash, op: "redeem", code });
+        if (res.ok) {
+          state.coins += res.reward;
+          updateUI();
+          showNotice(`Nhận thành công +${res.reward.toLocaleString()} Xu`);
+        } else {
+          showNotice(res.error || "Mã không hợp lệ!");
+        }
+      });
     }
 
-    // SYNC LOOP & UI UPDATE
     function updateUI() {
       document.getElementById("disp-username").innerText = state.user || "";
       document.getElementById("disp-coins").innerText = state.coins.toLocaleString();
