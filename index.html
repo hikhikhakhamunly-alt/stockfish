@@ -1,0 +1,714 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Stock & Fish — Đại Dương</title>
+  <style>
+    :root {
+      --bg-dark: #031124;
+      --bg-card: #082247;
+      --accent: #00d2ff;
+      --accent-gold: #ffc107;
+      --text: #e0f2fe;
+      --danger: #ff4d4d;
+      --success: #00e676;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    body { background-color: var(--bg-dark); color: var(--text); overflow-x: hidden; min-height: 100vh; }
+
+    /* Utilities */
+    .hidden { display: none !important; }
+    .btn { background: linear-gradient(135deg, #0088cc, #00d2ff); color: #fff; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-weight: bold; transition: 0.2s; }
+    .btn:hover { opacity: 0.9; transform: scale(1.02); }
+    .btn-danger { background: linear-gradient(135deg, #c0392b, #e74c3c); }
+    .btn-gold { background: linear-gradient(135deg, #f39c12, #f1c40f); color: #000; }
+    .card { background: var(--bg-card); border: 1px solid #103d75; border-radius: 8px; padding: 15px; margin-bottom: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
+
+    /* Top Notice */
+    #notice-box { position: fixed; top: 15px; left: 50%; transform: translateX(-50%); z-index: 9999; background: rgba(0,210,255,0.9); color: #000; padding: 10px 25px; border-radius: 20px; font-weight: bold; box-shadow: 0 0 15px var(--accent); display: none; }
+
+    /* Auth Screen */
+    #auth-screen { max-width: 400px; margin: 80px auto; text-align: center; }
+    .auth-input { width: 100%; padding: 10px; margin: 8px 0; background: #020b18; border: 1px solid #103d75; color: #fff; border-radius: 4px; }
+
+    /* Game Header */
+    header { background: #020b18; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--accent); }
+    .user-info { display: flex; gap: 15px; align-items: center; }
+    .coin-badge { background: #051937; border: 1px solid var(--accent-gold); color: var(--accent-gold); padding: 5px 12px; border-radius: 15px; font-weight: bold; }
+
+    /* Game Layout */
+    .game-container { display: grid; grid-template-columns: 1fr 320px; gap: 15px; padding: 15px; max-width: 1400px; margin: 0 auto; }
+    @media (max-width: 850px) { .game-container { grid-template-columns: 1fr; } }
+
+    /* Sea Ocean Canvas Area */
+    .ocean-zone { position: relative; height: 500px; background: radial-gradient(circle at center, #0a3568 0%, #031124 100%); border-radius: 10px; overflow: hidden; border: 2px solid #005599; }
+    .boss-hp-bar { position: absolute; top: 15px; left: 50%; transform: translateX(-50%); width: 80%; background: rgba(0,0,0,0.6); border: 1px solid #fff; border-radius: 10px; height: 20px; overflow: hidden; }
+    .boss-hp-fill { height: 100%; background: linear-gradient(90deg, #ff4d4d, #ffc107); width: 100%; transition: width 0.2s; }
+    .boss-name { position: absolute; top: -20px; width: 100%; text-align: center; font-size: 12px; color: #fff; text-shadow: 0 0 4px #000; }
+    
+    .boss-entity { position: absolute; top: 150px; left: -200px; width: 180px; height: 120px; transition: left 1s linear; cursor: pointer; }
+    .boss-enraged { filter: drop-shadow(0 0 10px var(--danger)); animation: vibrate 0.1s infinite; }
+
+    .cannon-base { position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); width: 80px; height: 80px; text-align: center; }
+    .bullet-net { position: absolute; border: 2px dashed var(--accent); border-radius: 50%; background: rgba(0,210,255,0.2); animation: expandNet 0.4s forwards; }
+
+    @keyframes expandNet { 0% { width: 10px; height: 10px; opacity: 1; } 100% { width: 120px; height: 120px; opacity: 0; } }
+    @keyframes vibrate { 0% { transform: translateY(0); } 50% { transform: translateY(-2px); } 100% { transform: translateY(2px); } }
+
+    .damage-text { position: absolute; color: var(--accent-gold); font-weight: bold; font-size: 18px; animation: floatUp 0.8s forwards; pointer-events: none; }
+    .crit-text { color: var(--danger); font-size: 24px; text-shadow: 0 0 5px #fff; }
+    @keyframes floatUp { 0% { opacity: 1; transform: translateY(0); } 100% { opacity: 0; transform: translateY(-40px); } }
+
+    /* Modals Overlay */
+    .modal { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.8); display: flex; justify-content: center; align-items: center; z-index: 1000; }
+    .modal-content { background: var(--bg-card); width: 90%; max-width: 700px; max-height: 85vh; border-radius: 8px; border: 1px solid var(--accent); overflow-y: auto; padding: 20px; position: relative; }
+    .close-btn { position: absolute; top: 10px; right: 15px; font-size: 20px; cursor: pointer; color: #fff; }
+
+    /* Grid Selection UI */
+    .grid-selectable { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; margin-top: 10px; }
+    .select-card { background: #041833; border: 1px solid #103d75; padding: 10px; text-align: center; border-radius: 6px; cursor: pointer; }
+    .select-card.active { border-color: var(--accent); background: #083366; }
+
+    /* Admin Panel Tabs */
+    .tab-bar { display: flex; gap: 5px; border-bottom: 1px solid #103d75; margin-bottom: 15px; overflow-x: auto; }
+    .tab-item { padding: 8px 12px; cursor: pointer; background: #041833; border-radius: 4px 4px 0 0; }
+    .tab-item.active { background: var(--accent); color: #000; font-weight: bold; }
+  </style>
+</head>
+<body>
+
+  <div id="notice-box">Thông báo</div>
+
+  <!-- AUTH SCREEN -->
+  <div id="auth-screen" class="card">
+    <h2 style="color: var(--accent); margin-bottom: 15px;">STOCK & FISH — ĐẠI DƯƠNG</h2>
+    <p style="font-size: 13px; color: #8ab4f8; margin-bottom: 20px;">Game giải trí bằng xu ảo. Bắn cá săn Boss, chơi bầu cua, đầu tư chứng khoán giả lập và nhận nhiều phần quà hấp dẫn!</p>
+    <input type="text" id="auth-user" class="auth-input" placeholder="Tên tài khoản">
+    <input type="password" id="auth-pass" class="auth-input" placeholder="Mật khẩu">
+    <div style="margin-top: 15px; display: flex; gap: 10px;">
+      <button class="btn" style="flex:1" onclick="doAuth('login')">Đăng nhập</button>
+      <button class="btn btn-gold" style="flex:1" onclick="doAuth('register')">Đăng ký</button>
+    </div>
+  </div>
+
+  <!-- MAIN GAME SCREEN -->
+  <div id="game-screen" class="hidden">
+    <header>
+      <div class="user-info">
+        <strong id="disp-username" style="color: var(--accent);">User</strong>
+        <span class="coin-badge">Xu: <span id="disp-coins">0</span></span>
+        <span id="disp-event" class="hidden" style="background: var(--danger); color: #fff; padding: 2px 8px; border-radius: 10px; font-size: 12px;">X2 SỰ KIỆN</span>
+      </div>
+      <div style="display: flex; gap: 8px;">
+        <button class="btn" onclick="openModal('modal-rooms')">Phòng</button>
+        <button class="btn" onclick="openModal('modal-guns')">Kho Súng</button>
+        <button class="btn" onclick="openModal('modal-baucua')">Bầu Cua</button>
+        <button class="btn" onclick="openModal('modal-wheel')">Vòng Quay</button>
+        <button class="btn" onclick="openModal('modal-stock')">Chứng Khoán</button>
+        <button class="btn btn-gold" id="btn-admin" onclick="openModal('modal-admin')">Admin</button>
+        <button class="btn btn-danger" onclick="logout()">Thoát</button>
+      </div>
+    </header>
+
+    <div class="game-container">
+      <!-- LEFT: OCEAN PLAY AREA -->
+      <div>
+        <div class="ocean-zone" id="ocean-screen" onclick="fireCannon(event)">
+          <div class="boss-hp-bar">
+            <div class="boss-name" id="boss-name">Đang tìm Kiếm Boss...</div>
+            <div class="boss-hp-fill" id="boss-hp-fill"></div>
+          </div>
+          <div id="boss-target" class="boss-entity" onclick="hitBossDirect(event)">
+            <svg id="boss-svg" viewBox="0 0 100 100" width="100%" height="100%"></svg>
+          </div>
+          <div class="cannon-base" id="cannon">
+            <svg id="gun-svg" viewBox="0 0 60 60" width="60" height="60"></svg>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top: 15px; display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <span>Đạn: </span>
+            <select id="bullet-select" onchange="changeBullet(this.value)" class="auth-input" style="width: auto; display: inline-block;">
+              <option value="100">100</option>
+              <option value="1000">1,000</option>
+              <option value="10000">10,000</option>
+              <option value="50000">50,000</option>
+              <option value="100000">100,000</option>
+            </select>
+            <button class="btn" id="btn-auto" onclick="toggleAutoFire()">Tự bắn: TẮT</button>
+          </div>
+          <div>
+            <button class="btn" onclick="useSkill('net')">Lưới Cầu (40s)</button>
+            <button class="btn btn-gold" onclick="useSkill('bomb')">Bom Nước (90s)</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT: DASHBOARD SIDEBAR -->
+      <div>
+        <div class="card">
+          <h3>Nhiệm vụ Hằng ngày</h3>
+          <ul id="quest-list" style="list-style: none; font-size: 13px; margin-top: 8px;"></ul>
+        </div>
+        <div class="card">
+          <h3>Chuyển xu / Nhập Mã</h3>
+          <input type="text" id="gift-target" class="auth-input" placeholder="Tên người nhận">
+          <input type="number" id="gift-amount" class="auth-input" placeholder="Số xu tặng">
+          <button class="btn" style="width:100%; margin-bottom: 10px;" onclick="sendGift()">Tặng Xu (Phí 5%)</button>
+          <hr style="border-color: #103d75; margin: 10px 0;">
+          <input type="text" id="code-input" class="auth-input" placeholder="Nhập mã Quà Tặng">
+          <button class="btn btn-gold" style="width:100%;" onclick="redeemCode()">Nhận Quà</button>
+        </div>
+        <div class="card">
+          <h3>Top Đại Gia</h3>
+          <div id="leaderboard" style="font-size: 13px; margin-top: 5px;">Đang tải...</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: PHÒNG BẮN CÁ -->
+  <div id="modal-rooms" class="modal hidden">
+    <div class="modal-content">
+      <span class="close-btn" onclick="closeModal('modal-rooms')">&times;</span>
+      <h3>Chọn Phòng Bắn Cá</h3>
+      <div class="grid-selectable" id="room-grid"></div>
+    </div>
+  </div>
+
+  <!-- MODAL: KHO SÚNG -->
+  <div id="modal-guns" class="modal hidden">
+    <div class="modal-content">
+      <span class="close-btn" onclick="closeModal('modal-guns')">&times;</span>
+      <h3>Kho Súng & Trang Bị</h3>
+      <div class="grid-selectable" id="gun-grid"></div>
+    </div>
+  </div>
+
+  <!-- MODAL: BẦU CUA -->
+  <div id="modal-baucua" class="modal hidden">
+    <div class="modal-content">
+      <span class="close-btn" onclick="closeModal('modal-baucua')">&times;</span>
+      <h3>Bầu Cua Online (Đồng bộ phòng)</h3>
+      <p style="font-size: 12px; color: #8ab4f8;">Thời gian còn lại: <strong id="bc-timer" style="color:var(--accent-gold);">30</strong>s</p>
+      <div style="display: flex; gap: 10px; margin: 10px 0;" id="bc-dice-result">
+        <span>Kết quả trước: - - -</span>
+      </div>
+      <div class="grid-selectable" id="bc-grid"></div>
+    </div>
+  </div>
+
+  <!-- MODAL: VÒNG QUAY -->
+  <div id="modal-wheel" class="modal hidden">
+    <div class="modal-content" style="text-align: center;">
+      <span class="close-btn" onclick="closeModal('modal-wheel')">&times;</span>
+      <h3>Vòng Quay May Rủi</h3>
+      <div style="margin: 20px 0;">
+        <select id="wheel-bet" class="auth-input" style="width: 200px; display: inline-block;">
+          <option value="10000">10,000 Xu</option>
+          <option value="100000">100,000 Xu</option>
+          <option value="1000000">1,000,000 Xu</option>
+        </select>
+      </div>
+      <button class="btn btn-gold" style="font-size: 18px; padding: 10px 30px;" onclick="spinWheel()">QUAY NGAY</button>
+      <div id="wheel-result" style="margin-top: 15px; font-weight: bold; color: var(--accent);"></div>
+    </div>
+  </div>
+
+  <!-- MODAL: CHỨNG KHOÁN -->
+  <div id="modal-stock" class="modal hidden">
+    <div class="modal-content">
+      <span class="close-btn" onclick="closeModal('modal-stock')">&times;</span>
+      <h3>Thị Trường Chứng Khoán Giả Lập</h3>
+      <div id="stock-list" style="margin-top: 15px;"></div>
+    </div>
+  </div>
+
+  <!-- MODAL: ADMIN -->
+  <div id="modal-admin" class="modal hidden">
+    <div class="modal-content" style="max-width: 900px;">
+      <span class="close-btn" onclick="closeModal('modal-admin')">&times;</span>
+      <h3>Bảng Quản Trị Admin</h3>
+      <div class="tab-bar">
+        <div class="tab-item active" onclick="switchAdminTab('users')">Người chơi</div>
+        <div class="tab-item" onclick="switchAdminTab('stats')">Thống kê</div>
+        <div class="tab-item" onclick="switchAdminTab('event')">Sự kiện</div>
+        <div class="tab-item" onclick="switchAdminTab('config')">Cấu hình</div>
+        <div class="tab-item" onclick="switchAdminTab('log')">Nhật ký</div>
+      </div>
+      <div id="admin-tab-content"></div>
+    </div>
+  </div>
+
+  <script>
+    // CAU HINH TRO CHOI
+    const CFG = {
+      API: "YOUR_APPS_SCRIPT_WEB_APP_URL_HERE", // Thay URL sau khi deploy Code.gs
+      syncInterval: 4000
+    };
+
+    const ROOMS = [
+      { id: 0, name: "Tập Bắn", minBet: 100, reqCoins: 0, scale: 0.6 },
+      { id: 1, name: "Thường", minBet: 1000, reqCoins: 0, scale: 0.8 },
+      { id: 2, name: "Hải Cẩu", minBet: 10000, reqCoins: 0, scale: 1.0 },
+      { id: 3, name: "Đảo Rùa", minBet: 50000, reqCoins: 0, scale: 1.3 },
+      { id: 4, name: "Đại Gia", minBet: 100000, reqCoins: 10000000, scale: 1.7 },
+      { id: 5, name: "Huyền Thoại", minBet: 1000000, reqCoins: 100000000, scale: 2.5 }
+    ];
+
+    const BOSSES = [
+      { name: "Cá Rồng Băng", hp: 2000000, speed: 16, color: "#00d2ff" },
+      { name: "Bạch Tuộc Tím", hp: 6000000, speed: 14, color: "#9b59b6" },
+      { name: "Cá Mập Lửa", hp: 15000000, speed: 12, color: "#e74c3c" },
+      { name: "Rùa Thần Vàng", hp: 40000000, speed: 10, color: "#f1c40f" },
+      { name: "Kraken Sấm", hp: 100000000, speed: 8, color: "#e67e22" }
+    ];
+
+    const GUNS = [
+      { id: 0, name: "Súng Gỗ", price: 10000, dps: 1.0 },
+      { id: 1, name: "Súng Sắt", price: 50000, dps: 1.5 },
+      { id: 2, name: "Súng Đồng", price: 200000, dps: 2.2 },
+      { id: 3, name: "Súng Bạc (Cánh)", price: 1000000, dps: 3.2 },
+      { id: 4, name: "Súng Vàng (Lửa)", price: 5000000, dps: 4.5 },
+      { id: 5, name: "Súng Kim Cương", price: 20000000, dps: 6.5 },
+      { id: 6, name: "Súng Lục Bảo", price: 50000000, dps: 9.0 },
+      { id: 7, name: "Súng Huyết Ngọc (Quả Cầu)", price: 100000000, dps: 12.0 },
+      { id: 8, name: "Súng Hắc Nước", price: 200000000, dps: 15.0 },
+      { id: 9, name: "Súng Hào Quang", price: 350000000, dps: 18.0 },
+      { id: 10, name: "Súng Thiên Hà", price: 500000000, dps: 22.0 }
+    ];
+
+    // STATE TRO CHOI TRONG BỘ NHỚ RAM
+    let state = {
+      user: null,
+      passHash: "",
+      coins: 0,
+      room: 0,
+      gun: 0,
+      bullet: 100,
+      bossIdx: 0,
+      bossHp: 2000000,
+      bossLoop: 1,
+      isAuto: false,
+      isAdmin: false,
+      quests: { shoot: 0, kill: 0, damage: 0, boss: 0 }
+    };
+
+    let autoInterval = null;
+    let bcPollInterval = null;
+
+    // HAM UTILS & SHA-256
+    async function sha256(str) {
+      const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(str));
+      return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+
+    function showNotice(msg) {
+      const box = document.getElementById("notice-box");
+      box.innerText = msg;
+      box.style.display = "block";
+      setTimeout(() => { box.style.display = "none"; }, 3000);
+    }
+
+    async function apiCall(action, payload = {}) {
+      try {
+        const res = await fetch(CFG.API, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain" },
+          body: JSON.stringify({ action, ...payload })
+        });
+        return await res.json();
+      } catch (err) {
+        showNotice("Lỗi kết nối máy chủ!");
+        return { ok: false, error: "Network error" };
+      }
+    }
+
+    // DANG NHAP / DANG KY
+    async function doAuth(type) {
+      const u = document.getElementById("auth-user").value.trim();
+      const p = document.getElementById("auth-pass").value.trim();
+      if (!u || !p) return showNotice("Vui lòng điền đủ thông tin!");
+      
+      const hash = await sha256(u + ":" + p);
+      const res = await apiCall(type, { name: u, passHash: hash });
+
+      if (res.ok) {
+        state.user = u;
+        state.passHash = hash;
+        state.coins = res.coins;
+        state.isAdmin = res.isAdmin || false;
+        
+        document.getElementById("auth-screen").classList.add("hidden");
+        document.getElementById("game-screen").classList.remove("hidden");
+        if (!state.isAdmin) document.getElementById("btn-admin").classList.add("hidden");
+
+        updateUI();
+        initOcean();
+        startSyncLoop();
+        showNotice("Đăng nhập thành công!");
+      } else {
+        showNotice(res.error || "Thao tác thất bại!");
+      }
+    }
+
+    function logout() {
+      location.reload();
+    }
+
+    // OCEAN CANNON & BOSS LOGIC
+    function initOcean() {
+      renderGunSVG();
+      spawnBoss();
+    }
+
+    function renderGunSVG() {
+      const svg = document.getElementById("gun-svg");
+      const g = GUNS[state.gun];
+      let extra = "";
+      if (state.gun >= 3) extra += `<path d="M5 30 Q 15 10 30 30 Q 45 10 55 30" stroke="#fff" fill="none"/>`;
+      if (state.gun >= 4) extra += `<circle cx="30" cy="15" r="5" fill="#ff4d4d"/>`;
+      svg.innerHTML = `<rect x="25" y="10" width="10" height="40" fill="${state.gun > 5 ? '#f1c40f' : '#aaa'}"/>${extra}`;
+    }
+
+    function spawnBoss() {
+      const b = BOSSES[state.bossIdx];
+      const curRoom = ROOMS[state.room];
+      state.bossHp = Math.floor(b.hp * curRoom.scale * (1 + (state.bossLoop - 1) * 0.6));
+      
+      document.getElementById("boss-name").innerText = `${b.name} (Vòng ${state.bossLoop})`;
+      updateBossHpUI();
+
+      const el = document.getElementById("boss-target");
+      const svg = document.getElementById("boss-svg");
+      svg.innerHTML = `<ellipse cx="50" cy="50" rx="40" ry="25" fill="${b.color}" /><circle cx="70" cy="45" r="4" fill="#fff"/>`;
+      
+      el.style.left = "-200px";
+      setTimeout(() => {
+        el.style.transition = `left ${b.speed}s linear`;
+        el.style.left = "100%";
+      }, 100);
+    }
+
+    function updateBossHpUI() {
+      const b = BOSSES[state.bossIdx];
+      const maxHp = b.hp * ROOMS[state.room].scale * (1 + (state.bossLoop - 1) * 0.6);
+      const pct = Math.max(0, (state.bossHp / maxHp) * 100);
+      document.getElementById("boss-hp-fill").style.width = pct + "%";
+      
+      const el = document.getElementById("boss-target");
+      if (pct < 35) el.classList.add("boss-enraged");
+      else el.classList.remove("boss-enraged");
+    }
+
+    function fireCannon(e) {
+      if (state.coins < state.bullet) return showNotice("Không đủ xu bắn!");
+      state.coins -= state.bullet;
+      state.quests.shoot++;
+      updateUI();
+
+      // Damage calculation
+      const b = BOSSES[state.bossIdx];
+      const maxHp = b.hp * ROOMS[state.room].scale * (1 + (state.bossLoop - 1) * 0.6);
+      const maxDmgAllowed = maxHp * 0.05; // Cap at 5% per shot
+
+      let baseDmg = state.bullet * GUNS[state.gun].dps;
+      let isCrit = Math.random() < 0.08;
+      if (isCrit) baseDmg *= 2;
+      
+      let finalDmg = Math.min(maxDmgAllowed, baseDmg);
+      state.bossHp -= finalDmg;
+      state.quests.damage += finalDmg;
+
+      // Show floating text
+      showDamageText(e.clientX, e.clientY, Math.floor(finalDmg), isCrit);
+      updateBossHpUI();
+
+      if (state.bossHp <= 0) {
+        // Boss Defeated
+        const reward = Math.floor(maxHp * 0.15);
+        state.coins += reward;
+        state.quests.boss++;
+        showNotice(`Đã hạ Boss! Nhận +${reward.toLocaleString()} Xu`);
+        
+        state.bossIdx = (state.bossIdx + 1) % BOSSES.length;
+        if (state.bossIdx === 0) state.bossLoop++;
+        spawnBoss();
+      }
+    }
+
+    function hitBossDirect(e) {
+      e.stopPropagation();
+      fireCannon(e);
+    }
+
+    function showDamageText(x, y, dmg, isCrit) {
+      const el = document.createElement("div");
+      el.className = `damage-text ${isCrit ? 'crit-text' : ''}`;
+      el.innerText = (isCrit ? "CHÍ MẠNG! " : "") + "-" + dmg.toLocaleString();
+      el.style.left = (x - 20) + "px";
+      el.style.top = (y - 20) + "px";
+      document.body.appendChild(el);
+      setTimeout(() => el.remove(), 800);
+    }
+
+    function toggleAutoFire() {
+      state.isAuto = !state.isAuto;
+      document.getElementById("btn-auto").innerText = `Tự bắn: ${state.isAuto ? 'BẬT' : 'TẮT'}`;
+      if (state.isAuto) {
+        autoInterval = setInterval(() => {
+          const ocean = document.getElementById("ocean-screen");
+          const rect = ocean.getBoundingClientRect();
+          fireCannon({ clientX: rect.left + rect.width/2, clientY: rect.top + 100 });
+        }, 300);
+      } else {
+        clearInterval(autoInterval);
+      }
+    }
+
+    function changeBullet(val) {
+      const min = ROOMS[state.room].minBet;
+      if (parseInt(val) < min) {
+        showNotice(`Phòng này yêu cầu đạn tối thiểu ${min.toLocaleString()}!`);
+        document.getElementById("bullet-select").value = min;
+        state.bullet = min;
+      } else {
+        state.bullet = parseInt(val);
+      }
+    }
+
+    function useSkill(type) {
+      if (type === 'bomb') {
+        const b = BOSSES[state.bossIdx];
+        const maxHp = b.hp * ROOMS[state.room].scale * (1 + (state.bossLoop - 1) * 0.6);
+        const dmg = maxHp * 0.01;
+        state.bossHp -= dmg;
+        showNotice("Đã thả Bom Nước trừ 1% máu Boss!");
+        updateBossHpUI();
+      } else {
+        showNotice("Đã quăng Lưới Cầu Giữ Boss!");
+      }
+    }
+
+    // MODAL OPEN / CLOSE & UI RENDERING
+    function openModal(id) {
+      document.getElementById(id).classList.remove("hidden");
+      if (id === 'modal-rooms') renderRoomGrid();
+      if (id === 'modal-guns') renderGunGrid();
+      if (id === 'modal-baucua') startBauCuaPoll();
+      if (id === 'modal-stock') renderStock();
+      if (id === 'modal-admin') loadAdminData('users');
+    }
+
+    function closeModal(id) {
+      document.getElementById(id).classList.add("hidden");
+      if (id === 'modal-baucua') clearInterval(bcPollInterval);
+    }
+
+    function renderRoomGrid() {
+      const grid = document.getElementById("room-grid");
+      grid.innerHTML = ROOMS.map(r => `
+        <div class="select-card ${state.room === r.id ? 'active' : ''}" onclick="selectRoom(${r.id})">
+          <h4>${r.name}</h4>
+          <p style="font-size:11px; color:#aaa;">Cược min: ${r.minBet.toLocaleString()}</p>
+          <p style="font-size:11px; color:var(--accent-gold);">${r.reqCoins ? 'Yêu cầu: ' + (r.reqCoins/1e6) + 'M xu' : 'Tự do'}</p>
+        </div>
+      `).join('');
+    }
+
+    function selectRoom(id) {
+      const r = ROOMS[id];
+      if (state.coins < r.reqCoins) return showNotice("Bạn chưa đủ số dư tối thiểu vào phòng này!");
+      state.room = id;
+      changeBullet(r.minBet);
+      closeModal('modal-rooms');
+      spawnBoss();
+      showNotice(`Đã chuyển sang phòng ${r.name}`);
+    }
+
+    function renderGunGrid() {
+      const grid = document.getElementById("gun-grid");
+      grid.innerHTML = GUNS.map((g, idx) => `
+        <div class="select-card ${state.gun === idx ? 'active' : ''}" onclick="selectGun(${idx})">
+          <h4>${g.name}</h4>
+          <p style="font-size:11px; color:var(--accent-gold);">DPS: x${g.dps}</p>
+          <p style="font-size:11px;">Giá: ${g.price.toLocaleString()}</p>
+        </div>
+      `).join('');
+    }
+
+    function selectGun(idx) {
+      state.gun = idx;
+      renderGunSVG();
+      closeModal('modal-guns');
+      showNotice(`Đã trang bị ${GUNS[idx].name}`);
+    }
+
+    // BẦU CUA ONLINE
+    function startBauCuaPoll() {
+      const items = ["Bầu", "Cua", "Tôm", "Cá", "Gà", "Nai"];
+      const grid = document.getElementById("bc-grid");
+      grid.innerHTML = items.map(item => `
+        <div class="select-card">
+          <h4>${item}</h4>
+          <button class="btn btn-gold" style="margin-top:5px; width:100%; font-size:11px;" onclick="betBauCua('${item}')">Cược 1,000</button>
+        </div>
+      `).join('');
+
+      let timeLeft = 30;
+      document.getElementById("bc-timer").innerText = timeLeft;
+      bcPollInterval = setInterval(() => {
+        timeLeft--;
+        if (timeLeft < 0) timeLeft = 30;
+        document.getElementById("bc-timer").innerText = timeLeft;
+      }, 1000);
+    }
+
+    async function betBauCua(choice) {
+      if (state.coins < 1000) return showNotice("Không đủ xu cược!");
+      state.coins -= 1000;
+      updateUI();
+      const res = await apiCall("sync", { name: state.user, passHash: state.passHash, op: "bcBet", choice, amount: 1000 });
+      if (res.ok) showNotice(`Đã đặt 1,000 Xu vào ô ${choice}`);
+    }
+
+    // VÒNG QUAY MAY RỦI
+    async function spinWheel() {
+      const bet = parseInt(document.getElementById("wheel-bet").value);
+      if (state.coins < bet) return showNotice("Không đủ xu để quay!");
+      state.coins -= bet;
+      updateUI();
+
+      const res = await apiCall("sync", { name: state.user, passHash: state.passHash, op: "spin", bet });
+      if (res.ok) {
+        state.coins += res.winCoins;
+        document.getElementById("wheel-result").innerText = `Kết quả: ${res.label} -> Nhận +${res.winCoins.toLocaleString()} Xu`;
+        updateUI();
+      }
+    }
+
+    // CHỨNG KHOÁN GIẢ LẬP
+    function renderStock() {
+      const stocks = [
+        { code: "FISH", price: 1200 }, { code: "OCEAN", price: 4500 },
+        { code: "SHARK", price: 15000 }, { code: "SHIP", price: 3200 }
+      ];
+      const el = document.getElementById("stock-list");
+      el.innerHTML = stocks.map(s => `
+        <div class="card" style="display:flex; justify-content:space-between; align-items:center;">
+          <div>
+            <strong>${s.code}</strong>
+            <div style="font-size:12px; color:var(--success);">Giá: ${s.price} xu</div>
+          </div>
+          <div>
+            <button class="btn" onclick="showNotice('Đã mua 1 cổ phiếu ${s.code}')">Mua</button>
+            <button class="btn btn-danger" onclick="showNotice('Đã bán 1 cổ phiếu ${s.code}')">Bán</button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // ADMIN TAB SYSTEM
+    async function loadAdminData(tab) {
+      const content = document.getElementById("admin-tab-content");
+      content.innerHTML = "Đang tải dữ liệu...";
+
+      const res = await apiCall("admin", { name: state.user, passHash: state.passHash, sub: tab });
+      if (!res.ok) return content.innerHTML = "Lỗi tải dữ liệu hoặc không có quyền Admin!";
+
+      if (tab === 'users') {
+        content.innerHTML = `
+          <table style="width:100%; border-collapse:collapse; font-size:12px;">
+            <tr style="border-bottom:1px solid #103d75; text-align:left;">
+              <th style="padding:5px;">User</th><th>Xu</th><th>Khóa</th><th>Thao tác</th>
+            </tr>
+            ${res.users.map(u => `
+              <tr style="border-bottom:1px solid #051937;">
+                <td style="padding:5px;">${u.name}</td>
+                <td>${u.coins.toLocaleString()}</td>
+                <td>${u.locked ? 'RỒI' : 'Không'}</td>
+                <td>
+                  <button class="btn" style="font-size:10px;" onclick="adminAdjustCoins('${u.name}')">Sửa xu</button>
+                </td>
+              </tr>
+            `).join('')}
+          </table>
+        `;
+      } else if (tab === 'stats') {
+        content.innerHTML = `<p>Tổng người chơi: <strong>${res.totalUsers}</strong></p><p>Tổng xu server: <strong>${res.totalCoins.toLocaleString()}</strong></p>`;
+      } else {
+        content.innerHTML = `<p>Tính năng đang cập nhật nhật ký & cấu hình.</p>`;
+      }
+    }
+
+    function switchAdminTab(tab) {
+      document.querySelectorAll(".tab-item").forEach(el => el.classList.remove("active"));
+      event.target.classList.add("active");
+      loadAdminData(tab);
+    }
+
+    async function adminAdjustCoins(targetUser) {
+      const val = prompt("Nhập số xu mới:");
+      if (val === null) return;
+      const res = await apiCall("admin", { name: state.user, passHash: state.passHash, sub: "adjust", target: targetUser, coins: parseInt(val) });
+      if (res.ok) { showNotice("Đã cập nhật!"); loadAdminData('users'); }
+    }
+
+    // TẶNG XU & REDEEM CODE
+    async function sendGift() {
+      const target = document.getElementById("gift-target").value.trim();
+      const amount = parseInt(document.getElementById("gift-amount").value);
+      if (!target || !amount || amount <= 0) return showNotice("Vui lòng điền đúng thông tin!");
+      
+      const res = await apiCall("sync", { name: state.user, passHash: state.passHash, op: "gift", target, amount });
+      if (res.ok) {
+        state.coins -= amount;
+        updateUI();
+        showNotice("Tặng xu thành công!");
+      } else {
+        showNotice(res.error || "Tặng xu thất bại!");
+      }
+    }
+
+    async function redeemCode() {
+      const code = document.getElementById("code-input").value.trim();
+      if (!code) return showNotice("Vui lòng nhập mã!");
+      
+      const res = await apiCall("sync", { name: state.user, passHash: state.passHash, op: "redeem", code });
+      if (res.ok) {
+        state.coins += res.reward;
+        updateUI();
+        showNotice(`Nhận thành công +${res.reward.toLocaleString()} Xu`);
+      } else {
+        showNotice(res.error || "Mã không hợp lệ!");
+      }
+    }
+
+    // SYNC LOOP & UI UPDATE
+    function updateUI() {
+      document.getElementById("disp-username").innerText = state.user || "";
+      document.getElementById("disp-coins").innerText = state.coins.toLocaleString();
+      
+      const qList = document.getElementById("quest-list");
+      qList.innerHTML = `
+        <li>Bắn cá: ${state.quests.shoot}/100</li>
+        <li>Sát thương: ${Math.floor(state.quests.damage).toLocaleString()}/2M</li>
+        <li>Hạ Boss: ${state.quests.boss}/1</li>
+      `;
+    }
+
+    function startSyncLoop() {
+      setInterval(async () => {
+        if (!state.user) return;
+        const res = await apiCall("sync", { name: state.user, passHash: state.passHash, op: "check", coins: state.coins });
+        if (res.ok) {
+          state.coins = res.coins;
+          updateUI();
+        }
+      }, CFG.syncInterval);
+    }
+  </script>
+</body>
+</html>
